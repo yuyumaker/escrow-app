@@ -1,80 +1,218 @@
-# 🏗 Scaffold-ETH 2
+# Escrow App — POTOS 测试网代币托管应用
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+基于 POTOS 测试网（`chainId: 60600`）的代币托管（Escrow）去中心化应用，使用 scaffold-eth 2 搭建。买方支付 PQY 代币锁定到合约，卖方确认收款后释放，任何一方均可退款或仲裁。
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+## 目录
 
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
+- [环境要求](#环境要求)
+- [快速开始](#快速开始)
+- [环境变量](#环境变量)
+- [本地开发](#本地开发)
+- [部署到 POTOS 测试网](#部署到-potos-测试网)
+- [合约地址](#合约地址)
+- [网络配置](#网络配置)
+- [项目结构](#项目结构)
+- [常见问题](#常见问题)
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+## 环境要求
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+| 工具 | 版本 | 说明 |
+|---|---|---|
+| Node.js | `>= 18.18.0` | 必须，corepack 已随 Node 自带 |
+| Yarn | `3.2.3`（项目锁定） | 见下方 corepack 说明 |
+| Git | 任意较新版本 | 拉取代码 |
+| 浏览器 | Chrome / Edge / Firefox | 需安装 MetaMask |
 
-## Requirements
+无需安装 Ganache、Hardhat 全局版本或 Python。
 
-Before you begin, you need to install the following tools:
+## 快速开始
 
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+```bash
+# 1. 克隆仓库
+git clone https://github.com/yuyumaker/escrow-app.git
+cd escrow-app
 
-## Quickstart
+# 2. 启用项目锁定的 Yarn 版本（必需，否则会回退到系统 Yarn 1.x）
+corepack enable
+corepack prepare yarn@3.2.3 --activate
+yarn --version   # 应输出 3.2.3
 
-To get started with Scaffold-ETH 2, follow the steps below:
-
-1. Install dependencies if it was skipped in CLI:
-
-```
-cd my-dapp-example
+# 3. 安装依赖
 yarn install
+
+# 4. 配置环境变量
+cp packages/hardhat/.env.example packages/hardhat/.env
+# 然后编辑 .env，填入你的私钥（见下节）
+
+# 5. 启动前端
+cd packages/nextjs
+yarn dev
 ```
 
-2. Run a local network in the first terminal:
+浏览器打开 `http://localhost:3000`。
 
+## 环境变量
+
+hardhat 目录下的 `.env` 必须包含以下内容（可参考 `.env.example`）：
+
+| 变量名 | 说明 | 是否必填 |
+|---|---|---|
+| `__RUNTIME_DEPLOYER_PRIVATE_KEY` | 部署者钱包私钥，用于部署合约。以 `0x` 开头的 64 位十六进制 | 部署时必填 |
+| `ALCHEMY_API_KEY` | Alchemy API Key，用于 mainnet fork（默认已内置） | 可选 |
+| `ETHERSCAN_V2_API_KEY` | 合约验证用 API Key（默认已内置） | 可选 |
+
+示例 `.env`：
+
+```env
+__RUNTIME_DEPLOYER_PRIVATE_KEY=0x你的私钥
+ALCHEMY_API_KEY=oKxs-03sij-U_N0iOlrSsZFr29-IqbuF
+ETHERSCAN_V2_API_KEY=DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW
 ```
+
+> 私钥对应地址需在 POTOS 测试网持有 PQY 以支付部署 gas，见 [领水](#领水)。
+
+## 本地开发
+
+### 方式一：仅前端（推荐协作）
+
+合约已部署在 POTOS 测试网，组员无需重新部署，直接拉代码即可：
+
+```bash
+git pull origin main
+cd packages/nextjs
+yarn install
+yarn dev
+```
+
+> **不要运行 `yarn deploy`**。重新部署会生成新合约地址，订单将不再共享。
+
+### 方式二：完整本地链
+
+```bash
+# 终端 1：启动本地 hardhat 链
+cd packages/hardhat
 yarn chain
+
+# 终端 2：部署到本地链
+yarn deploy --network localhost
+
+# 终端 3：启动前端
+cd packages/nextjs
+yarn dev
 ```
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/hardhat/hardhat.config.ts`.
+## 部署到 POTOS 测试网
 
-3. On a second terminal, deploy the test contract:
+```bash
+cd packages/hardhat
 
-```
-yarn deploy
-```
+# 确认网络配置中存在 potos_testnet（hardhat.config.ts 已内置）
+# 网络名是 potos_testnet，不是 potos
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
-
-4. On a third terminal, start your NextJS app:
-
-```
-yarn start
+yarn deploy --network potos_testnet
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+部署成功后控制台会输出两个地址，并自动写入 `packages/nextjs/contracts/deployedContracts.ts`。将此文件提交到仓库：
 
-Run smart contract test with `yarn hardhat:test`
+```bash
+cd ../..
+git add packages/nextjs/contracts/deployedContracts.ts
+git commit -m "chore: update deployed contract addresses"
+git push origin main
+```
 
-- Edit your smart contracts in `packages/hardhat/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/hardhat/deploy`
+### 领水
 
+部署前需确保部署者地址有 PQY 余额：
 
-## Documentation
+https://faucet-testnet.potos.hk/
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+## 合约地址
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+已部署在 POTOS 测试网（`chainId: 60600`）：
 
-## Contributing to Scaffold-ETH 2
+| 合约 | 地址 | 说明 |
+|---|---|---|
+| Escrow | `0x42Fcaa73Aca956749Fe272fd3308999931bcEDb7` | 托管主合约 |
+| PQYToken | `0x6b02e4F5B972d11478Db35DC70B51ee8b54ee133` | 测试代币（ERC-20） |
+| YourContract | `0xfC3983DE3F7cBe1Ba01084469779470AD0BbeFfa` | 脚手架示例合约 |
 
-We welcome contributions to Scaffold-ETH 2!
+区块浏览器：
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+https://scan-testnet.potos.hk/
+
+## 网络配置
+
+在 MetaMask 中手动添加 POTOS 测试网：
+
+| 字段 | 值 |
+|---|---|
+| 网络名称 | POTOS Testnet |
+| RPC URL | `https://rpc-testnet.potos.hk` |
+| 链 ID | `60600` |
+| 货币符号 | PQY |
+| 区块浏览器 | `https://scan-testnet.potos.hk` |
+
+或通过 ChainList 一键添加：`https://chainlist.org/chain/60600`。
+
+也可在浏览器控制台确认当前网络：
+
+```javascript
+await window.ethereum.request({ method: 'eth_chainId' });
+// 应返回 "0xec88"，对应十进制 60600
+```
+
+## 项目结构
+
+```
+escrow-app/
+├── packages/
+│   ├── hardhat/              # 合约与部署脚本
+│   │   ├── contracts/        # Solidity 合约源码
+│   │   ├── deploy/           # 部署脚本
+│   │   ├── deployments/      # 部署产物（按网络分目录）
+│   │   └── hardhat.config.ts
+│   └── nextjs/               # 前端
+│       ├── app/              # 页面（Next.js App Router）
+│       ├── contracts/
+│       │   └── deployedContracts.ts  # 自动生成的合约地址
+│       └── constants.ts
+├── .gitignore
+├── package.json
+└── README.md
+```
+
+## 交易记录
+
+> 在此列出主要链上交互记录：创建订单、支付、释放、退款、仲裁等，包含交易哈希、调用方法、参与方、区块号与时间戳。
+
+| 序号 | 交易哈希 | 方法 | 调用方 | 区块号 | 时间 | 说明 |
+|---|---|---|---|---|---|---|
+|  |  |  |  |  |  |  |
+
+## 常见问题
+
+**Q：执行 `yarn deploy` 报 `Error HH100: Network potos doesn't exist`**
+网络名是 `potos_testnet` 而非 `potos`，正确命令为 `yarn deploy --network potos_testnet`。
+
+**Q：执行 `git commit` 时报 `packageManager: yarn@3.2.3` 与全局 Yarn 1.x 冲突**
+需启用 corepack：`corepack enable && corepack prepare yarn@3.2.3 --activate`，详见[环境要求](#环境要求)。
+
+**Q：组员看不到我创建的订单**
+请按以下顺序排查：① MetaMask 当前网络是否为 POTOS Testnet（`chainId 60600`）；② 前端 `deployedContracts.ts` 中的合约地址是否为上文地址；③ 是否误执行了 `yarn deploy` 导致合约地址被覆盖。
+
+**Q：部署时报 `insufficient funds for gas`
+部署者地址 PQY 余额不足，前往 `https://faucet-testnet.potos.hk/` 领取测试币。
+
+## 许可
+
+仅供课程大作业演示使用。
+操作	                    交易哈希	                                                                                  区块浏览器链接	                                                                       发起账户
+部署 Escrow	     | 0xe002d948e99dc66e9acfb26e47f94af8e9acbe399cd1708a25652c10384414a4	|POTOS Testnet transaction 0xe002d948e99dc66e9acfb26e47f94af8e9acbe399cd1708a25652c10384414a4 | Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
+createOrder 订单0| 0x8b1a626caa03e01344c51a72e7cc638993f21b8880ce6cf868affd0a53bc5f6e	|POTOS Testnet transaction 0x8b1a626caa03e01344c51a72e7cc638993f21b8880ce6cf868affd0a53bc5f6e | Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
+approve	         |0x32811034e9e036bb99eff00d543063a9a61375e7ca7fe60f6a653f16e1820c59	|POTOS Testnet transaction 0x32811034e9e036bb99eff00d543063a9a61375e7ca7fe60f6a653f16e1820c59 | Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
+deposit 订单 0	|0x6485a2b616af2369ce1f99dec05fa464e1855237556a5542443b31749c373edc	|POTOS Testnet transaction 0x6485a2b616af2369ce1f99dec05fa464e1855237556a5542443b31749c373edc | Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
+dispute 订单 1	|0xcfc48f020adc69441cf003be380389beede5feb7d667f907ab5dde9dd15829de	|POTOS Testnet transaction 0xcfc48f020adc69441cf003be380389beede5feb7d667f907ab5dde9dd15829de | Blockscout	|0xB8f31201580d62B5b3eeabaEEA07F34000b20537
+resolve 订单 1	|0x09caee34603dacb88dce17f7235a811506e73d19ab36e7060dd50d8282523398	|POTOS Testnet transaction 0x09caee34603dacb88dce17f7235a811506e73d19ab36e7060dd50d8282523398 | Blockscout	|0xaCD3de09F8517C5Fc41c459CF92174D9cEDbf195
+confirm 订单 0	|0x6485a2b616af2369ce1f99dec05fa464e1855237556a5542443b31749c373edc	|POTOS Testnet transaction 0x6485a2b616af2369ce1f99dec05fa464e1855237556a5542443b31749c373edc | Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
+resolve 失败（路线 A）			
