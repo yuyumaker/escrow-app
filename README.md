@@ -200,6 +200,7 @@ escrow-app/
 ## 交易记录
 仅供课程大作业演示使用。
 | 方法 | 交易哈希 | 区块浏览器链接 | 发起账号 |
+|---|---|---|---|
 |部署 Escrow	     | 0xe002d948e99dc66e9acfb26e47f94af8e9acbe399cd1708a25652c10384414a4	|POTOS Testnet transaction  |0xe002d948e99dc66e9acfb26e47f94af8e9acbe399cd1708a25652c10384414a4 /| Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
 |createOrder 订单0| 0x8b1a626caa03e01344c51a72e7cc638993f21b8880ce6cf868affd0a53bc5f6e	|POTOS Testnet transaction |0x8b1a626caa03e01344c51a72e7cc638993f21b8880ce6cf868affd0a53bc5f6e /| Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
 |approve	         |0x32811034e9e036bb99eff00d543063a9a61375e7ca7fe60f6a653f16e1820c59	|POTOS Testnet transaction |0x32811034e9e036bb99eff00d543063a9a61375e7ca7fe60f6a653f16e1820c59 /| Blockscout	|0xebc26A08a9fE0E7421A03D0BC8b3a678E6063c7d
